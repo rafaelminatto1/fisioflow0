@@ -4,14 +4,17 @@
   "private": true,
   "scripts": {
     "dev": "next dev",
-    "build": "prisma generate && prisma db push && next build",
-    "start": "next start",
+    "build": "prisma generate && next build",
+    "build:railway": "prisma generate && prisma migrate deploy && next build",
+    "start": "next start -p ${PORT:-3000}",
+    "start:railway": "prisma migrate deploy && next start -p ${PORT:-3000}",
     "postbuild": "next-sitemap",
     "db:push": "prisma db push",
     "db:migrate": "prisma migrate deploy",
     "db:studio": "prisma studio",
     "db:seed": "tsx prisma/seed.ts",
     "db:reset": "prisma migrate reset --force",
+    "db:prepare": "prisma generate && prisma migrate deploy",
     "lint": "next lint",
     "lint:fix": "next lint --fix",
     "type-check": "tsc --noEmit",
@@ -20,7 +23,7 @@
     "test:coverage": "vitest --coverage",
     "test:e2e": "playwright test",
     "analyze": "ANALYZE=true next build",
-    "clean": "rm -rf .next dist",
+    "clean": "rm -rf .next dist node_modules/.cache",
     "prepare": "husky install || true"
   },
   "dependencies": {

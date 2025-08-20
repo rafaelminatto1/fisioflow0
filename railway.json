@@ -1,0 +1,42 @@
+{
+  "$schema": "https://railway.app/railway.schema.json",
+  "build": {
+    "builder": "NIXPACKS",
+    "buildCommand": "pnpm install --frozen-lockfile && pnpm prisma generate && pnpm build",
+    "watchPatterns": [
+      "**/*.ts",
+      "**/*.tsx",
+      "**/*.js",
+      "**/*.jsx",
+      "prisma/**/*",
+      "package.json",
+      "pnpm-lock.yaml"
+    ]
+  },
+  "deploy": {
+    "numReplicas": 1,
+    "sleepApplication": false,
+    "restartPolicyType": "ON_FAILURE",
+    "restartPolicyMaxRetries": 10
+  },
+  "environments": {
+    "production": {
+      "variables": {
+        "NODE_ENV": "production",
+        "NEXT_TELEMETRY_DISABLED": "1",
+        "SKIP_ENV_VALIDATION": "true"
+      }
+    }
+  },
+  "regions": [
+    "us-west1"
+  ],
+  "service": {
+    "icon": "🏥",
+    "name": "fisioflow",
+    "source": {
+      "repo": "$RAILWAY_GIT_REPO_NAME",
+      "branch": "$RAILWAY_GIT_BRANCH"
+    }
+  }
+}
