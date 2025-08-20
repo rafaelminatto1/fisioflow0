@@ -12,7 +12,8 @@
       "Bash(railway init:*)",
       "Bash(railway:*)",
       "Bash(curl:*)",
-      "Bash(rm:*)"
+      "Bash(rm:*)",
+      "Bash(git commit:*)"
     ],
     "deny": []
   }
