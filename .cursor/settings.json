@@ -1,0 +1,17 @@
+{
+  "claude": {
+    "model": "claude-3-sonnet",
+    "temperature": 0.7,
+    "maxTokens": 4096,
+    "systemPrompt": "Você é um expert em Next.js 14, TypeScript, Prisma, Neon DB e Railway. Sempre gere código production-ready com tratamento de erros, tipos TypeScript completos e otimizações de performance."
+  },
+  "codeActions": {
+    "autoSave": true,
+    "formatOnSave": true,
+    "lintOnSave": true
+  },
+  "agents": {
+    "enabled": true,
+    "defaultAgent": "fisioflow-developer"
+  }
+}

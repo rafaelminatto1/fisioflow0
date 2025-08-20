@@ -1,0 +1,19 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(pnpm type-check:*)",
+      "Bash(pnpm build:*)",
+      "Bash(npm run build:*)",
+      "Bash(pnpm dlx:*)",
+      "Bash(railway --version)",
+      "Bash(railway auth:*)",
+      "Bash(railway login:*)",
+      "Bash(railway whoami:*)",
+      "Bash(railway init:*)",
+      "Bash(railway:*)",
+      "Bash(curl:*)",
+      "Bash(rm:*)"
+    ],
+    "deny": []
+  }
+}

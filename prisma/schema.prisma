@@ -1,0 +1,376 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+}
+
+enum Role {
+  ADMIN
+  FISIOTERAPEUTA
+  ESTAGIARIO
+  PACIENTE
+  PARCEIRO
+}
+
+enum Gender {
+  MASCULINO
+  FEMININO
+  OUTRO
+}
+
+model User {
+  id            String   @id @default(cuid())
+  email         String   @unique
+  name          String?
+  role          Role     @default(PACIENTE)
+  passwordHash  String?
+  crefito       String?  // Para fisioterapeutas
+  supervisorId  String?  // Para estagiários
+  active        Boolean  @default(true)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+  
+  // Relacionamentos
+  supervisor    User?     @relation("Supervision", fields: [supervisorId], references: [id])
+  supervisees   User[]    @relation("Supervision")
+  
+  // Perfis específicos
+  patient       Patient?
+  therapist     Therapist?
+  partner       Partner?
+  
+  @@index([email])
+  @@index([role])
+  @@index([crefito])
+}
+
+model Patient {
+  id                String   @id @default(cuid())
+  userId            String?  @unique
+  
+  // Dados pessoais (criptografados)
+  cpf               String   @unique
+  fullName          String
+  birthDate         DateTime
+  gender            Gender
+  phone             String
+  email             String?
+  
+  // Endereço
+  address           Json     // { street, number, complement, neighborhood, city, state, zipCode }
+  
+  // Dados médicos
+  bloodType         String?
+  allergies         String[] @default([])
+  medications       String[] @default([])
+  medicalConditions String[] @default([])
+  
+  // LGPD
+  dataConsent       Boolean  @default(false)
+  imageConsent      Boolean  @default(false)
+  consentDate       DateTime?
+  
+  // Relacionamentos
+  user              User?    @relation(fields: [userId], references: [id])
+  appointments      Appointment[]
+  medicalRecords    MedicalRecord[]
+  evolutions        Evolution[]
+  prescriptions     ExercisePrescription[]
+  
+  // Metadados
+  active            Boolean  @default(true)
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+  createdBy         String
+  
+  @@index([cpf])
+  @@index([fullName])
+  @@index([email])
+}
+
+model Therapist {
+  id              String   @id @default(cuid())
+  userId          String   @unique
+  crefito         String   @unique
+  specialty       String
+  
+  user            User     @relation(fields: [userId], references: [id])
+  appointments    Appointment[]
+  medicalRecords  MedicalRecord[]
+  evolutions      Evolution[]
+  prescriptions   ExercisePrescription[]
+  workingHours    WorkingHours[]
+  
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+  
+  @@index([crefito])
+}
+
+model Partner {
+  id              String   @id @default(cuid())
+  userId          String   @unique
+  businessName    String
+  specialty       String   // ex: "Educação Física"
+  
+  user            User     @relation(fields: [userId], references: [id])
+  vouchers        Voucher[]
+  
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+}
+
+enum AppointmentStatus {
+  SCHEDULED
+  CONFIRMED
+  CHECKED_IN
+  IN_PROGRESS
+  COMPLETED
+  CANCELLED
+  NO_SHOW
+}
+
+model Appointment {
+  id              String   @id @default(cuid())
+  patientId       String
+  therapistId     String
+  
+  scheduledAt     DateTime
+  duration        Int      @default(60) // minutos
+  status          AppointmentStatus @default(SCHEDULED)
+  
+  // Financeiro
+  price           Decimal  @db.Decimal(10, 2)
+  isPaid          Boolean  @default(false)
+  
+  // Notas
+  notes           String?  @db.Text
+  privateNotes    String?  @db.Text
+  
+  // Relacionamentos
+  patient         Patient  @relation(fields: [patientId], references: [id])
+  therapist       Therapist @relation(fields: [therapistId], references: [id])
+  evolution       Evolution?
+  
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+  
+  @@index([scheduledAt])
+  @@index([patientId])
+  @@index([therapistId])
+  @@index([status])
+}
+
+model MedicalRecord {
+  id                    String   @id @default(cuid())
+  patientId             String
+  therapistId           String
+  
+  // Avaliação inicial
+  chiefComplaint        String   @db.Text
+  presentIllness        String   @db.Text
+  pastMedicalHistory    String   @db.Text
+  
+  // Diagnóstico
+  physioDiagnosis       String
+  coffitoCode           String
+  icd10                 String?
+  
+  // Relacionamentos
+  patient               Patient  @relation(fields: [patientId], references: [id])
+  therapist             Therapist @relation(fields: [therapistId], references: [id])
+  
+  createdAt             DateTime @default(now())
+  updatedAt             DateTime @updatedAt
+  
+  @@index([patientId])
+  @@index([therapistId])
+  @@unique([patientId, therapistId])
+}
+
+model Evolution {
+  id                String   @id @default(cuid())
+  patientId         String
+  therapistId       String
+  appointmentId     String?  @unique
+  
+  // SOAP
+  subjective        String   @db.Text
+  objective         String   @db.Text
+  assessment        String   @db.Text
+  plan              String   @db.Text
+  
+  patient           Patient  @relation(fields: [patientId], references: [id])
+  therapist         Therapist @relation(fields: [therapistId], references: [id])
+  appointment       Appointment? @relation(fields: [appointmentId], references: [id])
+  
+  createdAt         DateTime @default(now())
+  
+  @@index([patientId])
+  @@index([therapistId])
+}
+
+enum ExerciseCategory {
+  STRETCHING      // Alongamento
+  STRENGTHENING   // Fortalecimento
+  MOBILITY        // Mobilidade
+  BALANCE         // Equilíbrio
+  CARDIO          // Cardiovascular
+  FUNCTIONAL      // Funcional
+}
+
+enum BodyRegion {
+  CERVICAL
+  THORACIC
+  LUMBAR
+  SHOULDER
+  ELBOW
+  WRIST_HAND
+  HIP
+  KNEE
+  ANKLE_FOOT
+  CORE
+}
+
+model Exercise {
+  id                String   @id @default(cuid())
+  name              String
+  category          ExerciseCategory
+  bodyRegion        BodyRegion[]
+  
+  description       String   @db.Text
+  instructions      String   @db.Text
+  videoUrl          String?
+  thumbnailUrl      String?
+  duration          Int?     // segundos
+  
+  difficulty        Int      @default(1) // 1-5
+  equipment         String[] @default([])
+  
+  // Metadados
+  isPublic          Boolean  @default(true)
+  createdBy         String
+  tags              String[] @default([])
+  
+  prescriptions     ExercisePrescription[]
+  
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+  
+  @@index([category])
+  @@index([name])
+}
+
+model ExercisePrescription {
+  id              String   @id @default(cuid())
+  patientId       String
+  exerciseId      String
+  therapistId     String
+  
+  // Parâmetros
+  sets            Int?
+  repetitions     Int?
+  holdTime        Int?     // segundos
+  restTime        Int?     // segundos
+  frequency       String   // "2x ao dia", "3x semana"
+  
+  // Período
+  startDate       DateTime
+  endDate         DateTime?
+  
+  // Status
+  isActive        Boolean  @default(true)
+  
+  // Relacionamentos
+  patient         Patient  @relation(fields: [patientId], references: [id])
+  exercise        Exercise @relation(fields: [exerciseId], references: [id])
+  therapist       Therapist @relation(fields: [therapistId], references: [id])
+  executions      ExerciseExecution[]
+  
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+  
+  @@index([patientId])
+  @@index([isActive])
+}
+
+model ExerciseExecution {
+  id                String   @id @default(cuid())
+  prescriptionId    String
+  
+  executedAt        DateTime @default(now())
+  setsCompleted     Int?
+  repsCompleted     Int?
+  
+  // Feedback
+  painLevel         Int?     // 0-10
+  difficulty        Int?     // 1-5
+  notes             String?
+  
+  prescription      ExercisePrescription @relation(fields: [prescriptionId], references: [id])
+  
+  @@index([prescriptionId])
+  @@index([executedAt])
+}
+
+model WorkingHours {
+  id              String   @id @default(cuid())
+  therapistId     String
+  dayOfWeek       Int      // 0-6 (domingo-sábado)
+  startTime       String   // "08:00"
+  endTime         String   // "18:00"
+  
+  therapist       Therapist @relation(fields: [therapistId], references: [id])
+  
+  @@unique([therapistId, dayOfWeek])
+}
+
+enum VoucherStatus {
+  ACTIVE
+  REDEEMED
+  EXPIRED
+  CANCELLED
+}
+
+model Voucher {
+  id              String   @id @default(cuid())
+  code            String   @unique
+  partnerId       String
+  patientId       String?
+  
+  value           Decimal  @db.Decimal(10, 2)
+  platformFee     Decimal  @db.Decimal(10, 2)
+  partnerEarning  Decimal  @db.Decimal(10, 2)
+  
+  status          VoucherStatus @default(ACTIVE)
+  expiresAt       DateTime
+  redeemedAt      DateTime?
+  
+  partner         Partner  @relation(fields: [partnerId], references: [id])
+  
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+  
+  @@index([code])
+  @@index([status])
+}
+
+// Modelo de auditoria para compliance LGPD
+model AuditLog {
+  id          String   @id @default(cuid())
+  action      String   // PATIENT_CREATED, PATIENT_DELETED, etc.
+  userId      String
+  patientId   String?
+  metadata    Json     // Informações adicionais
+  
+  createdAt   DateTime @default(now())
+  
+  @@index([action])
+  @@index([userId])
+  @@index([patientId])
+  @@index([createdAt])
+}
