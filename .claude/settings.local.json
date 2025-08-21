@@ -13,7 +13,9 @@
       "Bash(railway:*)",
       "Bash(curl:*)",
       "Bash(rm:*)",
-      "Bash(git commit:*)"
+      "Bash(git commit:*)",
+      "WebFetch(domain:railway.app)",
+      "WebFetch(domain:railway.com)"
     ],
     "deny": []
   }

@@ -1,11 +1,9 @@
 # Multi-stage build optimized for Railway deployment
 FROM node:20-alpine AS base
+RUN apk add --no-cache libc6-compat openssl curl
 
 # Install dependencies only when needed
 FROM base AS deps
-# Check https://github.com/nodejs/docker-node/tree/b4117f9333da4138b03a546ec926ef50a31506c3#nodealpine to understand why libc6-compat might be needed.
-RUN apk add --no-cache libc6-compat openssl
-
 WORKDIR /app
 
 # Install dependencies based on the preferred package manager
@@ -18,14 +16,18 @@ WORKDIR /app
 COPY --from=deps /app/node_modules ./node_modules
 COPY . .
 
-# Copy environment file for build
-COPY .env.example .env
+# Create minimal .env file for build
+RUN echo "NODE_ENV=production" > .env && \
+    echo "RAILWAY_ENVIRONMENT_NAME=production" >> .env && \
+    echo "DATABASE_URL=postgresql://placeholder" >> .env && \
+    echo "NEXTAUTH_SECRET=placeholder" >> .env && \
+    echo "NEXTAUTH_URL=https://placeholder.railway.app" >> .env
 
 # Generate Prisma client
 RUN npx prisma generate
 
-# Build the application
-RUN npm run build
+# Build the application using pnpm
+RUN pnpm run build
 
 # Production image, copy all the files and run next
 FROM base AS runner
@@ -35,15 +37,14 @@ ENV NODE_ENV=production
 ENV NEXT_TELEMETRY_DISABLED=1
 
 # Create nextjs user
-RUN addgroup --system --gid 1001 nodejs
-RUN adduser --system --uid 1001 nextjs
+RUN addgroup --system --gid 1001 nodejs && \
+    adduser --system --uid 1001 nextjs
 
 # Copy the public folder from the project as this is not included in the build process
 COPY --from=builder /app/public ./public
 
 # Create directory for Next.js cache
-RUN mkdir .next
-RUN chown nextjs:nodejs .next
+RUN mkdir .next && chown nextjs:nodejs .next
 
 # Automatically leverage output traces to reduce image size
 # https://nextjs.org/docs/advanced-features/output-file-tracing
