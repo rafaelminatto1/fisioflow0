@@ -8,7 +8,8 @@ WORKDIR /app
 
 # Install dependencies based on the preferred package manager
 COPY package.json pnpm-lock.yaml* ./
-RUN corepack enable pnpm && pnpm i --frozen-lockfile
+RUN corepack enable pnpm && \
+    NODE_OPTIONS="--max-old-space-size=1024" pnpm i --frozen-lockfile --ignore-scripts
 
 # Rebuild the source code only when needed
 FROM base AS builder
@@ -26,11 +27,13 @@ RUN echo "NODE_ENV=production" > .env && \
     echo "ENCRYPTION_KEY=0123456789abcdef0123456789abcdef" >> .env && \
     echo "SKIP_ENV_VALIDATION=true" >> .env
 
-# Generate Prisma client
-RUN npx prisma generate
+# Enable pnpm and generate Prisma client
+RUN corepack enable pnpm && \
+    npx prisma --version && \
+    NODE_OPTIONS="--max-old-space-size=1024" npx prisma generate --schema=./prisma/schema.prisma
 
-# Build the application using pnpm
-RUN pnpm run build
+# Build the application using pnpm with memory optimization
+RUN NODE_OPTIONS="--max-old-space-size=1536" pnpm run build
 
 # Production image, copy all the files and run next
 FROM base AS runner

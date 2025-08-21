@@ -95,6 +95,17 @@ const nextConfig: NextConfig = {
     ]
   },
   webpack: (config, { dev, isServer }) => {
+    // Memory optimization for Railway
+    if (isRailway && !dev) {
+      config.optimization = {
+        ...config.optimization,
+        mergeDuplicateChunks: true,
+        removeAvailableModules: true,
+        removeEmptyChunks: true,
+        sideEffects: false,
+      };
+    }
+    
     // Production and Railway optimizations
     if (!dev) {
       if (!isServer) {
