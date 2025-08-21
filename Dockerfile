@@ -19,9 +19,12 @@ COPY . .
 # Create minimal .env file for build
 RUN echo "NODE_ENV=production" > .env && \
     echo "RAILWAY_ENVIRONMENT_NAME=production" >> .env && \
-    echo "DATABASE_URL=postgresql://placeholder" >> .env && \
-    echo "NEXTAUTH_SECRET=placeholder" >> .env && \
-    echo "NEXTAUTH_URL=https://placeholder.railway.app" >> .env
+    echo "DATABASE_URL=postgresql://placeholder:placeholder@localhost:5432/placeholder" >> .env && \
+    echo "DIRECT_URL=postgresql://placeholder:placeholder@localhost:5432/placeholder" >> .env && \
+    echo "NEXTAUTH_SECRET=placeholder-secret-key-minimum-32-characters" >> .env && \
+    echo "NEXTAUTH_URL=https://placeholder.railway.app" >> .env && \
+    echo "ENCRYPTION_KEY=0123456789abcdef0123456789abcdef" >> .env && \
+    echo "SKIP_ENV_VALIDATION=true" >> .env
 
 # Generate Prisma client
 RUN npx prisma generate

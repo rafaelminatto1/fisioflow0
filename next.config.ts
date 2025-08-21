@@ -7,6 +7,9 @@ const nextConfig: NextConfig = {
   // Railway-specific optimizations
   output: isRailway ? 'standalone' : undefined,
   
+  // Increase build timeout for Railway
+  staticPageGenerationTimeout: 180,
+  
   experimental: {
     serverActions: {
       allowedOrigins: [
@@ -137,6 +140,12 @@ const nextConfig: NextConfig = {
         // Optimize for Railway's memory constraints
         config.optimization.moduleIds = 'deterministic';
         config.optimization.minimize = true;
+        
+        // Reduce memory usage during build
+        config.optimization.splitChunks.maxAsyncRequests = 5;
+        config.optimization.splitChunks.maxInitialRequests = 3;
+        config.optimization.splitChunks.minSize = 30000;
+        config.optimization.splitChunks.maxSize = 200000;
       }
     }
     
